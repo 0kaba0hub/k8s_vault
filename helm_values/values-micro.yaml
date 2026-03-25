@@ -1,0 +1,60 @@
+# HashiCorp Vault — microk8s standalone deployment
+# Chart: hashicorp/vault
+
+global:
+  enabled: true
+  tlsDisable: true       # TLS terminated at ingress/port-forward level
+
+injector:
+  enabled: false         # Using External Secrets Operator instead of Agent Injector
+
+server:
+  standalone:
+    enabled: true
+    config: |
+      ui = true
+
+      listener "tcp" {
+        tls_disable = 1
+        address     = "[::]:8200"
+        cluster_address = "[::]:8201"
+      }
+
+      storage "raft" {
+        path    = "/vault/data"
+        node_id = "vault-0"
+      }
+
+      service_registration "kubernetes" {}
+
+  dataStorage:
+    enabled: true
+    size: 2Gi
+    storageClass: "microk8s-hostpath"
+    accessMode: ReadWriteOnce
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  readinessProbe:
+    enabled: true
+    path: "/v1/sys/health?standbyok=true&sealedcode=204&uninitcode=204"
+
+  livenessProbe:
+    enabled: true
+    path: "/v1/sys/health?standbyok=true"
+    initialDelaySeconds: 60
+
+  # Expose Vault UI via port-forward (use ingress if needed)
+  service:
+    type: ClusterIP
+    port: 8200
+
+ui:
+  enabled: true
+  serviceType: ClusterIP
