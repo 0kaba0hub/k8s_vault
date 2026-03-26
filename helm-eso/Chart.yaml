@@ -1,0 +1,10 @@
+apiVersion: v2
+name: eso-wrapper
+description: External Secrets Operator for microk8s
+type: application
+version: 0.1.0
+appVersion: "0.14.4"
+dependencies:
+  - name: external-secrets
+    version: 0.14.4
+    repository: https://charts.external-secrets.io

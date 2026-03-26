@@ -1,0 +1,10 @@
+apiVersion: v2
+name: vault-wrapper
+description: HashiCorp Vault standalone deployment for microk8s
+type: application
+version: 0.1.0
+appVersion: "1.18.4"
+dependencies:
+  - name: vault
+    version: 0.29.1
+    repository: https://helm.releases.hashicorp.com

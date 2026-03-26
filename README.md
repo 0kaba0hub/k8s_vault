@@ -9,12 +9,18 @@ Auth between ESO and Vault uses the **Kubernetes auth method** (ESO ServiceAccou
 
 ```
 k8s_vault/
+├── helm/
+│   └── Chart.yaml               # Vault wrapper chart (hashicorp/vault dependency)
+├── helm-eso/
+│   └── Chart.yaml               # ESO wrapper chart (external-secrets dependency)
 ├── helm_values/
 │   ├── values-micro.yaml        # Vault standalone values
 │   └── values-eso-micro.yaml    # External Secrets Operator values
 ├── manifests/
-│   ├── cluster-secret-store.yaml  # ClusterSecretStore -> Vault
-│   └── external-secret-pdns.yaml  # ExternalSecret for pdns api-key
+│   ├── cluster-secret-store.yaml      # ClusterSecretStore -> Vault
+│   ├── external-secret-pdns.yaml      # ExternalSecret for pdns api-key (dns namespace)
+│   ├── external-secret-pdns-web.yaml  # ExternalSecret for pdns api-key (web namespace)
+│   └── external-secret-web.yaml       # ExternalSecret for dns-web nextauth secret
 └── scripts/
     └── vault-init.sh            # One-time Vault initialization
 ```
@@ -25,6 +31,8 @@ k8s_vault/
 secret/k8s/
   pdns/
     api-key
+  dns-web/
+    nextauth-secret
 ```
 
 ## Installation order
@@ -35,7 +43,8 @@ secret/k8s/
 helm repo add hashicorp https://helm.releases.hashicorp.com
 helm repo update
 
-helm upgrade --install vault hashicorp/vault \
+helm dependency update helm/
+helm upgrade --install vault helm/ \
   -f helm_values/values-micro.yaml \
   -n vault --create-namespace
 ```
@@ -67,7 +76,8 @@ The script will:
 helm repo add external-secrets https://charts.external-secrets.io
 helm repo update
 
-helm upgrade --install external-secrets external-secrets/external-secrets \
+helm dependency update helm-eso/
+helm upgrade --install external-secrets helm-eso/ \
   -f helm_values/values-eso-micro.yaml \
   -n external-secrets --create-namespace
 ```
@@ -77,6 +87,8 @@ helm upgrade --install external-secrets external-secrets/external-secrets \
 ```bash
 kubectl apply -f manifests/cluster-secret-store.yaml
 kubectl apply -f manifests/external-secret-pdns.yaml
+kubectl apply -f manifests/external-secret-pdns-web.yaml
+kubectl apply -f manifests/external-secret-web.yaml
 ```
 
 Check sync status:
@@ -84,6 +96,8 @@ Check sync status:
 ```bash
 kubectl get clustersecretstore vault-backend
 kubectl get externalsecret pdns -n dns
+kubectl get externalsecret pdns -n web
+kubectl get externalsecret dns-web-nextauth -n web
 ```
 
 ### 5. Deploy pdns

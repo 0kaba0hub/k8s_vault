@@ -1,19 +1,9 @@
 # External Secrets Operator — microk8s deployment
 # Chart: external-secrets/external-secrets
 
-replicaCount: 1
-
-resources:
-  requests:
-    cpu: 50m
-    memory: 64Mi
-  limits:
-    cpu: 200m
-    memory: 128Mi
-
-# Webhook for ExternalSecret validation
-webhook:
+external-secrets:
   replicaCount: 1
+
   resources:
     requests:
       cpu: 50m
@@ -22,13 +12,24 @@ webhook:
       cpu: 200m
       memory: 128Mi
 
-# Cert controller for webhook TLS
-certController:
-  replicaCount: 1
-  resources:
-    requests:
-      cpu: 50m
-      memory: 64Mi
-    limits:
-      cpu: 200m
-      memory: 128Mi
+  # Webhook for ExternalSecret validation
+  webhook:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+
+  # Cert controller for webhook TLS
+  certController:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
