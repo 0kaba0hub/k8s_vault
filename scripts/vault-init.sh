@@ -100,7 +100,7 @@ enable_k8s_auth() {
 
 create_policy() {
   echo "Creating ESO policy..."
-  local policy='path "secret/data/k8s/*" { capabilities = ["read"] } path "secret/metadata/k8s/*" { capabilities = ["read", "list"] }'
+  local policy='path "secret/data/k8s/*" { capabilities = ["read"] } path "secret/metadata/k8s/*" { capabilities = ["read", "list"] } path "secret/data/k8s/dns-web" { capabilities = ["read"] }'
   kubectl exec -i -n "$VAULT_NAMESPACE" "$VAULT_POD" -- \
     vault policy write eso-policy - <<< "$policy"
 }
@@ -133,6 +133,16 @@ seed_pdns_secret() {
   echo "pdns api-key written to secret/k8s/pdns"
 }
 
+# ── 9. Seed dns-web secret ─────────────────────────────────────────────────────
+
+seed_web_secret() {
+  echo "Writing dns-web nextauth-secret to Vault..."
+  local secret
+  secret=$(openssl rand -base64 48)
+  vault_exec kv put secret/k8s/dns-web nextauth-secret="$secret"
+  echo "dns-web nextauth-secret written to secret/k8s/dns-web"
+}
+
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 main() {
@@ -145,6 +155,7 @@ main() {
   create_policy
   create_role
   seed_pdns_secret
+  seed_web_secret
 
   echo ""
   echo "Vault initialization complete."
@@ -152,6 +163,7 @@ main() {
   echo "  1. Store $KEYS_FILE securely (e.g. password manager) and delete it here"
   echo "  2. Apply ClusterSecretStore:  kubectl apply -f manifests/cluster-secret-store.yaml"
   echo "  3. Apply ExternalSecret:      kubectl apply -f manifests/external-secret-pdns.yaml"
+  echo "                                kubectl apply -f manifests/external-secret-web.yaml"
   echo "  4. Deploy pdns with ESO:      helm upgrade --install pdns ../k8s_pdns/helm -f ../k8s_pdns/helm_values/values-micro.yaml -n dns --create-namespace"
 }
 
