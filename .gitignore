@@ -2,5 +2,3 @@ vault-keys.json
 .DS_Store
 helm/charts/
 helm/Chart.lock
-helm-eso/charts/
-helm-eso/Chart.lock

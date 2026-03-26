@@ -1,9 +1,8 @@
 # k8s_vault
 
-HashiCorp Vault + External Secrets Operator for microk8s.
+HashiCorp Vault standalone deployment for microk8s.
 
-Secrets are stored in Vault and synced into Kubernetes via ESO `ExternalSecret` resources.
-Auth between ESO and Vault uses the **Kubernetes auth method** (ESO ServiceAccount token).
+Secrets are stored in Vault and synced into Kubernetes via ESO (`k8s_eso`).
 
 ## Directory layout
 
@@ -11,16 +10,8 @@ Auth between ESO and Vault uses the **Kubernetes auth method** (ESO ServiceAccou
 k8s_vault/
 ├── helm/
 │   └── Chart.yaml               # Vault wrapper chart (hashicorp/vault dependency)
-├── helm-eso/
-│   └── Chart.yaml               # ESO wrapper chart (external-secrets dependency)
 ├── helm_values/
-│   ├── values-micro.yaml        # Vault standalone values
-│   └── values-eso-micro.yaml    # External Secrets Operator values
-├── manifests/
-│   ├── cluster-secret-store.yaml      # ClusterSecretStore -> Vault
-│   ├── external-secret-pdns.yaml      # ExternalSecret for pdns api-key (dns namespace)
-│   ├── external-secret-pdns-web.yaml  # ExternalSecret for pdns api-key (web namespace)
-│   └── external-secret-web.yaml       # ExternalSecret for dns-web nextauth secret
+│   └── values-micro.yaml        # Vault standalone values for microk8s
 └── scripts/
     └── vault-init.sh            # One-time Vault initialization
 ```
@@ -35,7 +26,7 @@ secret/k8s/
     nextauth-secret
 ```
 
-## Installation order
+## Installation
 
 ### 1. Deploy Vault
 
@@ -66,47 +57,14 @@ The script will:
 - Create `eso-policy` (read access to `secret/data/k8s/*`)
 - Create `eso-role` bound to ESO ServiceAccount
 - Write the pdns api-key to `secret/k8s/pdns`
+- Generate and write a nextauth secret to `secret/k8s/dns-web`
 
 > **Important:** `vault-keys.json` contains unseal keys and root token.
 > Store it securely (password manager) and **do not commit it to git**.
 
-### 3. Deploy External Secrets Operator
+### 3. Deploy ESO and apply secrets
 
-```bash
-helm repo add external-secrets https://charts.external-secrets.io
-helm repo update
-
-helm dependency update helm-eso/
-helm upgrade --install external-secrets helm-eso/ \
-  -f helm_values/values-eso-micro.yaml \
-  -n external-secrets --create-namespace
-```
-
-### 4. Apply ClusterSecretStore and ExternalSecret
-
-```bash
-kubectl apply -f manifests/cluster-secret-store.yaml
-kubectl apply -f manifests/external-secret-pdns.yaml
-kubectl apply -f manifests/external-secret-pdns-web.yaml
-kubectl apply -f manifests/external-secret-web.yaml
-```
-
-Check sync status:
-
-```bash
-kubectl get clustersecretstore vault-backend
-kubectl get externalsecret pdns -n dns
-kubectl get externalsecret pdns -n web
-kubectl get externalsecret dns-web-nextauth -n web
-```
-
-### 5. Deploy pdns
-
-```bash
-helm upgrade --install pdns ../k8s_pdns/helm \
-  -f ../k8s_pdns/helm_values/values-micro.yaml \
-  -n dns --create-namespace
-```
+See `k8s_eso` repository.
 
 ## Unseal after pod restart
 
